@@ -40,6 +40,7 @@ public class Player : MonoBehaviour
         aimLine.endColor = new Color(1, 0, 0, 0.5f);
         aimLine.startWidth = 0.2f;
         aimLine.endWidth = 0.2f;
+        aimLine.positionCount = 0;
     }
 
     // Update is called once per frame
