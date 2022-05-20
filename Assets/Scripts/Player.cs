@@ -105,15 +105,17 @@ public class Player : MonoBehaviour
         chargeTime = watch.ElapsedMilliseconds / 1000f;
         //UnityEngine.Debug.Log(chargeTime + " s");
 
+        //chargeRate 계산
         float chargeRate;
         if (chargeTime >= 2f)
             chargeRate = 1f;
         else
             chargeRate = (chargeTime) * 0.5f;
-
-        currentArrow.GetComponent<SphereCollider>().isTrigger = false;
         //UnityEngine.Debug.Log(chargeRate);
         //UnityEngine.Debug.Log(normalArrowForce + bonusArrowForce * chargeRate);
+
+        //발사
+        currentArrow.GetComponent<SphereCollider>().isTrigger = false;
         currentArrow.GetComponent<Projectile>().ShootArrow(aimDirection, normalArrowForce + bonusArrowForce * chargeRate);
         isFired = true;
 
