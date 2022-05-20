@@ -14,6 +14,7 @@ public class Player : MonoBehaviour
     Vector3 indicatorDirection;
     Vector3 aimDirection;
     System.Diagnostics.Stopwatch watch;
+    LineRenderer aimLine;
 
     //전역 변수
     public float moveSpeed = 5f;
@@ -25,12 +26,20 @@ public class Player : MonoBehaviour
     public float bonusArrowForce = 800f;
     public float fullChargeTime = 2f;
     bool isFired = false;
+    public LayerMask layerMask;
 
     // Start is called before the first frame update
     void Start()
     {
         playerRig = GetComponent<Rigidbody>();
         watch = new System.Diagnostics.Stopwatch();
+
+        //Line renderer
+        aimLine = GetComponent<LineRenderer>();
+        aimLine.startColor = new Color(1, 0, 0, 0.5f);
+        aimLine.endColor = new Color(1, 0, 0, 0.5f);
+        aimLine.startWidth = 0.2f;
+        aimLine.endWidth = 0.2f;
     }
 
     // Update is called once per frame
@@ -39,6 +48,7 @@ public class Player : MonoBehaviour
         PlayerMove();
         ManageChargingArrow();
         ManageIndicator();
+        DrawAimLine();
     }
 
     void PlayerMove() {
@@ -71,7 +81,6 @@ public class Player : MonoBehaviour
             isReadyToFire = true;
             watch.Start();
             currentArrow = Instantiate(arrow, transform.position + aimDirection.normalized + new Vector3(0, 0.5f, 0), Quaternion.identity); //생성할 instance, 생성 위치, 생성 각도
-            //DrawAimLine();
         }
         else {
             isReadyToFire = false;
@@ -79,6 +88,13 @@ public class Player : MonoBehaviour
             watch.Reset();
             if(!isFired)
                 Destroy(currentArrow);
+
+            //조준선 지우기
+            if (aimLine.positionCount == 2) {
+                aimLine.SetPosition(0, Vector3.zero);
+                aimLine.SetPosition(1, Vector3.zero);
+                aimLine.positionCount = 0;
+            }
         }            
     }
 
@@ -105,6 +121,13 @@ public class Player : MonoBehaviour
 
         //indicator 표시
         currentIndicator = Instantiate(indicator, transform.position + aimDirection.normalized + new Vector3(0, 0.5f, 0), transform.rotation); //생성할 instance, 생성 위치, 생성 각도
+
+        //조준선 지우기
+        if (aimLine.positionCount == 2) {
+            aimLine.SetPosition(0, Vector3.zero);
+            aimLine.SetPosition(1, Vector3.zero);
+            aimLine.positionCount = 0;
+        }
     }
 
     //차징 중인 arrow 위치 관리
@@ -122,13 +145,21 @@ public class Player : MonoBehaviour
         }
     }
 
+    // 조준, 발사안함 상태일때 조준선 그리기
     void DrawAimLine() {
-        RaycastHit hitResult;
-        Vector3 modifiedAim = new Vector3(aimDirection.x, 0, aimDirection.z);
-        if (Physics.Raycast(transform.position, modifiedAim,out hitResult)) {
-            UnityEngine.Debug.DrawLine(transform.position, hitResult.point, Color.red);
-            Instantiate(arrow, hitResult.point, Quaternion.identity); //생성할 instance, 생성 위치, 생성 각도
-        }
+        if (isReadyToFire && !isFired) {
+            if(aimLine.positionCount == 2) {
+                aimLine.SetPosition(0, Vector3.zero);
+                aimLine.SetPosition(1, Vector3.zero);
+                aimLine.positionCount = 0;
+            }
+            RaycastHit hitResult;
+            if (Physics.Raycast(transform.position + new Vector3(0, 0.5f, 0), transform.forward, out hitResult, 100f, layerMask)) {
+                aimLine.positionCount = 2;
+                aimLine.SetPosition(0, currentArrow.transform.position);
+                aimLine.SetPosition(1, hitResult.point);
+            }
+        }        
     }
 
     private void OnCollisionEnter(Collision col) {
