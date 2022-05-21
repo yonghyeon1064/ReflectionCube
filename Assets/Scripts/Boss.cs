@@ -19,11 +19,11 @@ public class Boss : MonoBehaviour
     float remainAngle = 90f;
     float speed = 2.0f; //speed == 1 일때 1초동안 한번의 이동이 일어남
 
-    bool isRaserFire = false;
-    float raserTime = 0.4f;
-    float raserTopTime = 0.5f;
-    float raserMotionTime = 1.0f;
-    float currentRaserTimeSum = 0.0f;
+    bool isLaserFire = false;
+    float laserTime = 0.8f;
+    float laserTopTime = 0.5f;
+    float laserMotionTime = 1.0f;
+    float currentLaserTimeSum = 0.0f;
     bool isAirRotate = false;
     bool canStartAirRotate = false;
     bool laserFireEnd = false;
@@ -75,7 +75,7 @@ public class Boss : MonoBehaviour
 
     //Boss가 움직일 방향 지정 (이동 신호)
     void SetDest(string dir) {
-        if(!isBossMoving && !isRaserFire) {
+        if(!isBossMoving && !isLaserFire) {
             if (dir == "right") {
                 destPosition = transform.position + Vector3.right * 4;
                 destAngleAxis = new Vector3(0, 0, -1);
@@ -134,13 +134,14 @@ public class Boss : MonoBehaviour
 
     //레이저 발사 신호
     void FireLaser() {
-        if (!isRaserFire && !isBossMoving) {
+        if (!isLaserFire && !isBossMoving) {
             //레이저 발사
             RaycastHit hitResult;
             if (Physics.Raycast(transform.position, -1 * bossRotate.transform.forward, out hitResult, 100.0f, layerMask)) {
                 if(hitResult.normal == Vector3.up) {
+                    laserTime = 0.4f;
                     laserScale.transform.localScale = new Vector3(1, 10, 1); //아래방향 발사
-                    anim.SetTrigger("raserDownward");
+                    anim.SetTrigger("laserDown");
                     isAirRotate = true;
                 }
                     
@@ -149,17 +150,19 @@ public class Boss : MonoBehaviour
             }
             else
                 laserScale.transform.localScale = new Vector3(1, 10, 1); //위 방향 발사
-            isRaserFire = true;
+            isLaserFire = true;
         }
     }
 
     //레이저 발사 관리
     void calculateLaserTime() {
-        if (isRaserFire) {
+        if (isLaserFire) {
             //레이저 발사 경과시간 계산
-            currentRaserTimeSum += Time.deltaTime;
+            currentLaserTimeSum += Time.deltaTime;
+
+
             //시간경과 시 레이저 종료
-            if (currentRaserTimeSum >= raserTime && !laserFireEnd) {
+            if (currentLaserTimeSum >= laserTime && !laserFireEnd) {
                 laserScale.transform.localScale = new Vector3(1, 0, 1);
                 laserFireEnd = true;
             }
@@ -167,7 +170,7 @@ public class Boss : MonoBehaviour
             // 공중에 뜬 경우
             if (isAirRotate) {
                 //Boss가 최고점에 올라감을 체크
-                if ((currentRaserTimeSum >= raserTopTime - 0.005f) && !canStartAirRotate) { //오차 대비 0.05
+                if ((currentLaserTimeSum >= laserTopTime - 0.005f) && !canStartAirRotate) { //오차 대비 0.05
                     canStartAirRotate = true;
                     Debug.Log(bossRotate.transform.rotation);
                 }
@@ -189,10 +192,11 @@ public class Boss : MonoBehaviour
             }
             
             //시간경과 및 회전 종료 시 레이저 모션 종료
-            if (currentRaserTimeSum >= raserMotionTime && !isAirRotate) {
-                currentRaserTimeSum = 0.0f;
+            if (currentLaserTimeSum >= laserMotionTime && !isAirRotate) {
+                currentLaserTimeSum = 0.0f;
+                laserTime = 0.8f;
                 laserFireEnd = false;
-                isRaserFire = false;
+                isLaserFire = false;
             }
             
         }
