@@ -25,7 +25,7 @@ public class Projectile : MonoBehaviour
     public void ShootArrow(Vector3 aim, float ArrowForce) {
         arrowRig.AddForce(aim.normalized * ArrowForce);
     }
-
+    
     private void OnCollisionEnter(Collision col) {
         ReflectionHandler(col);
     }
