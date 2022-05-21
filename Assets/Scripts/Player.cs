@@ -6,9 +6,15 @@ using System.Diagnostics;
 public class Player : MonoBehaviour
 {
     //전역 참조변수
+    public GameObject gameM;
+    GameManager gameManager;
+    GameObject boss;
+    Boss bossScript;
     Rigidbody playerRig;
     public GameObject arrow;
     public GameObject indicator;
+    public GameObject body;
+    public GameObject face;
     GameObject currentArrow;
     GameObject currentIndicator;
     Vector3 indicatorDirection;
@@ -31,6 +37,11 @@ public class Player : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        gameManager = gameM.GetComponent<GameManager>();
+
+        boss = GameObject.Find("Boss");
+        bossScript = boss.GetComponent<Boss>();
+
         playerRig = GetComponent<Rigidbody>();
         watch = new System.Diagnostics.Stopwatch();
 
@@ -41,15 +52,18 @@ public class Player : MonoBehaviour
         aimLine.startWidth = 0.2f;
         aimLine.endWidth = 0.2f;
         aimLine.positionCount = 0;
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        PlayerMove();
-        ManageChargingArrow();
-        ManageIndicator();
-        DrawAimLine();
+        if (gameManager.gameActive) {
+            PlayerMove();
+            ManageChargingArrow();
+            ManageIndicator();
+            DrawAimLine();
+        }
     }
 
     void PlayerMove() {
@@ -133,6 +147,16 @@ public class Player : MonoBehaviour
         }
     }
 
+    //Game Manager가 호출
+    public void SetAimDirection(Vector3 aim) {
+        aimDirection = aim;
+    }
+
+    //Game Manager가 호출
+    public bool ReturnReadyState() {
+        return isReadyToFire;
+    }
+
     //차징 중인 arrow 위치 관리
     void ManageChargingArrow() {
         if (isReadyToFire && !isFired)
@@ -165,8 +189,18 @@ public class Player : MonoBehaviour
         }        
     }
 
+    private void OnTriggerEnter(Collider col) {
+        if (gameManager.gameActive) {
+            if (col.gameObject.tag == "Laser" || (col.gameObject.tag == "Boss" && bossScript.curState == Boss.CurrentState.attack)) {
+                gameManager.GameOver();
+            }
+        }
+    }
+
     private void OnCollisionEnter(Collision col) {
-        GetArrowBack(col);
+        if (gameManager.gameActive) {
+            GetArrowBack(col);
+        }
     }
 
     //Arrow 회수 함수
@@ -178,11 +212,11 @@ public class Player : MonoBehaviour
         }
     }
 
-    public void SetAimDirection(Vector3 aim) {
-        aimDirection = aim;
+    //colliider들의 isTrigger true로 바꾸는 함수 (GameOver가 호출)
+    public void SetIsTrigger() {
+        body.GetComponent<Collider>().isTrigger = true;
+        face.GetComponent<Collider>().isTrigger = true;
     }
 
-    public bool ReturnReadyState() {
-        return isReadyToFire;
-    }
+    
 }

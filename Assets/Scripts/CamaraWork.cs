@@ -6,6 +6,9 @@ public class CamaraWork : MonoBehaviour
 {
     //참조변수
     GameObject player;
+    //변수
+    public float yRevision = 15f;
+    public float zRevision = -8f;
 
     // Start is called before the first frame update
     void Start()
@@ -16,6 +19,6 @@ public class CamaraWork : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        transform.position = new Vector3(player.transform.position.x, player.transform.position.y + 19, player.transform.position.z - 11);
+        transform.position = new Vector3(player.transform.position.x, player.transform.position.y + yRevision, player.transform.position.z + zRevision);
     }
 }

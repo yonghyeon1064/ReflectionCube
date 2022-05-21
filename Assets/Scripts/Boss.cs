@@ -5,74 +5,120 @@ using UnityEngine;
 public class Boss : MonoBehaviour
 {
     //전역 참조변수
-    Vector3 destPosition;
-    Vector3 destAngleAxis;
+    public GameObject gameM;
+    GameManager gameManager;
     GameObject bossAni;
     GameObject bossRotate;
+    GameObject player;
     Animator anim;
     public GameObject laserScale;
     public LayerMask layerMask;
 
     //전역변수
+
+    //이동 관련
     bool isBossMoving = false;
     bool isRotate = false;
-    float remainAngle = 90f;
     float speed = 2.0f; //speed == 1 일때 1초동안 한번의 이동이 일어남
+    public float moveMotionTime = 1.0f;
 
+    //laser 관련
     bool isLaserFire = false;
     float laserTime = 0.8f;
     float laserTopTime = 0.5f;
     float laserMotionTime = 1.0f;
-    float currentLaserTimeSum = 0.0f;
     bool isAirRotate = false;
     bool canStartAirRotate = false;
     bool laserFireEnd = false;
 
+    //이동, laser 둘다 사용
+    float remainAngle = 90f;
+    float currentTimeSum = 0.0f;
+
+    //Boss state
+    public enum CurrentState {
+        idle, attack, dead, weak
+    };
+    public CurrentState curState = CurrentState.idle;
+
+    IEnumerator coroutine;
+
     // Start is called before the first frame update
     void Start()
     {
+        gameManager = gameM.GetComponent<GameManager>();
+        player = GameObject.Find("Player");
+
         bossAni = transform.GetChild(0).gameObject;
         bossRotate = bossAni.transform.GetChild(0).gameObject;
         anim = bossAni.GetComponent<Animator>();
         anim.SetBool("isFin", true);
+
+        coroutine = RepeatChasing();
+        //StartCoroutine(FindPlayer());
 
     }
 
     // Update is called once per frame
     void Update()
     {
-        GetInput();
         BossMove();
         calculateLaserTime();
     }
 
-    //Test용 함수
-    void GetInput() {
-        if (!isBossMoving) {
-            // -1 ~ 1 사이 값 입력받기
-            float inputX = Input.GetAxis("Horizontal");
-            float inputZ = Input.GetAxis("Vertical");
-        
-            if (Mathf.Abs(inputX) > Mathf.Abs(inputZ)) {
-                if (inputX > 0)
+    bool isBossAttacked = false;
+    IEnumerator FindPlayer() {
+        while(curState == CurrentState.idle) {
+            yield return new WaitForSeconds(0.5f);
+            if (isBossAttacked) {
+                GetComponent<Collider>().enabled = false;
+                StartCoroutine(coroutine);
+            }
+        }
+    }
+
+
+
+    public float waitTime = 0.4f;
+    IEnumerator RepeatChasing() {
+        while (gameManager.gameActive) {
+            yield return new WaitForSeconds(waitTime);
+            ChasingPlayer();
+        }
+    }
+
+    public void BossDied() {
+        StopCoroutine(coroutine);
+        curState = CurrentState.dead;
+    }
+
+    Vector3 playerDir;
+    float moveCount = 4f; //레이저 발사 후, 이동 후 관리
+    //Boss 행동패턴 AI (4번 이동 1번 레이저 반복)
+    void ChasingPlayer() {
+        if(moveCount == 0) {
+            FireLaser();
+        }
+        else {
+            //move
+            playerDir = (player.transform.position - transform.position).normalized;
+            if (Mathf.Abs(playerDir.x) >= Mathf.Abs(playerDir.z)) {
+                if (playerDir.x >= 0)
                     SetDest("right");
                 else
                     SetDest("left");
-            }   
-            else if (Mathf.Abs(inputX) < Mathf.Abs(inputZ)) {
-                if (inputZ > 0)
+            }
+            else {
+                if (playerDir.z >= 0)
                     SetDest("up");
                 else
                     SetDest("down");
             }
-            else if (Input.GetMouseButtonDown(0)) {
-                FireLaser();
-            }
-            else
-                return;
         }
     }
 
+    Vector3 destPosition;
+    Vector3 destAngleAxis;
     //Boss가 움직일 방향 지정 (이동 신호)
     void SetDest(string dir) {
         if(!isBossMoving && !isLaserFire) {
@@ -97,17 +143,27 @@ public class Boss : MonoBehaviour
                 Debug.Log("Wrong Input");
             }
             anim.SetTrigger("moveSignal");
+
+            curState = CurrentState.attack;
             isRotate = true;
             isBossMoving = true;
-        }        
+
+        }
     }
 
     //SetDest가 실행되면 발동, Boss를 움직임 (이동 관리)
     void BossMove() {
         if (isBossMoving) {
-            
-            if(transform.position == destPosition && !isRotate) {
+            currentTimeSum += Time.deltaTime;
+
+            if (transform.position == destPosition && !isRotate && curState == CurrentState.attack) {
+                curState = CurrentState.weak;
+            }
+
+            if(transform.position == destPosition && !isRotate && (currentTimeSum >= moveMotionTime)) {
+                currentTimeSum = 0f;
                 isBossMoving = false;
+                moveCount--;
                 return;
             }
             
@@ -158,11 +214,11 @@ public class Boss : MonoBehaviour
     void calculateLaserTime() {
         if (isLaserFire) {
             //레이저 발사 경과시간 계산
-            currentLaserTimeSum += Time.deltaTime;
+            currentTimeSum += Time.deltaTime;
 
 
             //시간경과 시 레이저 종료
-            if (currentLaserTimeSum >= laserTime && !laserFireEnd) {
+            if (currentTimeSum >= laserTime && !laserFireEnd) {
                 laserScale.transform.localScale = new Vector3(1, 0, 1);
                 laserFireEnd = true;
             }
@@ -170,9 +226,8 @@ public class Boss : MonoBehaviour
             // 공중에 뜬 경우
             if (isAirRotate) {
                 //Boss가 최고점에 올라감을 체크
-                if ((currentLaserTimeSum >= laserTopTime - 0.005f) && !canStartAirRotate) { //오차 대비 0.05
+                if ((currentTimeSum >= laserTopTime - 0.005f) && !canStartAirRotate) { //오차 대비 0.05
                     canStartAirRotate = true;
-                    Debug.Log(bossRotate.transform.rotation);
                 }
                 //AirRotate
                 if (isAirRotate && canStartAirRotate) {
@@ -192,13 +247,50 @@ public class Boss : MonoBehaviour
             }
             
             //시간경과 및 회전 종료 시 레이저 모션 종료
-            if (currentLaserTimeSum >= laserMotionTime && !isAirRotate) {
-                currentLaserTimeSum = 0.0f;
+            if (currentTimeSum >= laserMotionTime && !isAirRotate) {
+                currentTimeSum = 0.0f;
                 laserTime = 0.8f;
                 laserFireEnd = false;
                 isLaserFire = false;
+                moveCount = 4f;
             }
             
         }
     }
+
+    int idleCount = 1;
+    private void OnCollisionEnter(Collision col) {
+        if(col.gameObject.tag == "FriendlyArrow" && idleCount == 1) {
+            idleCount--;
+            isBossAttacked = true;
+        }
+    }
+
+    //Test용 함수
+    void GetInput() {
+        if (!isBossMoving) {
+            // -1 ~ 1 사이 값 입력받기
+            float inputX = Input.GetAxis("Horizontal");
+            float inputZ = Input.GetAxis("Vertical");
+
+            if (Mathf.Abs(inputX) > Mathf.Abs(inputZ)) {
+                if (inputX > 0)
+                    SetDest("right");
+                else
+                    SetDest("left");
+            }
+            else if (Mathf.Abs(inputX) < Mathf.Abs(inputZ)) {
+                if (inputZ > 0)
+                    SetDest("up");
+                else
+                    SetDest("down");
+            }
+            else if (Input.GetMouseButtonDown(0)) {
+                FireLaser();
+            }
+            else
+                return;
+        }
+    }
+
 }
