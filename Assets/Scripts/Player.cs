@@ -23,7 +23,7 @@ public class Player : MonoBehaviour
     LineRenderer aimLine;
 
     //전역 변수
-    public float moveSpeed;
+    float moveSpeed;
     public float walkSpeed = 8f;
     public float chargingSpeed = 5f;
     float inputX = 0;
@@ -36,6 +36,10 @@ public class Player : MonoBehaviour
     bool isFired = false;
     public LayerMask layerMask;
 
+    //sound
+    AudioSource soundPlayer;
+    public AudioClip walkSound;
+    public AudioClip chargingSound;
 
     // Start is called before the first frame update
     void Start()
@@ -47,6 +51,8 @@ public class Player : MonoBehaviour
 
         playerRig = GetComponent<Rigidbody>();
         watch = new System.Diagnostics.Stopwatch();
+        soundPlayer = GetComponent<AudioSource>();
+        
 
         moveSpeed = walkSpeed;
 
@@ -58,7 +64,6 @@ public class Player : MonoBehaviour
         aimLine.endWidth = 0.2f;
         aimLine.positionCount = 0;
 
-        
     }
 
     // Update is called once per frame
@@ -69,6 +74,41 @@ public class Player : MonoBehaviour
             ManageChargingArrow();
             ManageIndicator();
             DrawAimLine();
+        }
+    }
+
+    bool isWalkPlay = false;
+    bool isChargingPlay = false;
+    public void SetSound(string name, bool onOff) {
+        if (gameManager.gameActive) {
+            if (name == "walk") {
+                if (onOff) {
+                    soundPlayer.loop = true;
+                    soundPlayer.clip = walkSound;
+                    soundPlayer.Play();
+                    isWalkPlay = true;
+                    isChargingPlay = false;
+                }
+                else {
+                    soundPlayer.Stop();
+                    isWalkPlay = false;
+                }
+            }
+            else if (name == "charging") {
+                if (onOff) {
+                    soundPlayer.loop = false;
+                    soundPlayer.clip = chargingSound;
+                    soundPlayer.Play();
+                    isWalkPlay = false;
+                    isChargingPlay = true;
+                }
+                else {
+                    soundPlayer.Stop();
+                    isChargingPlay = false;
+                }
+            }
+            else
+                UnityEngine.Debug.Log("Wrong Input in SetSound");
         }
     }
 
@@ -86,6 +126,15 @@ public class Player : MonoBehaviour
             //시점전환 (조준 안하는 동안)
             if(velocity.magnitude > 0.8 && !isReadyToFire)
                 transform.rotation = Quaternion.LookRotation(velocity);
+
+            //walk sound 출력
+            if(!isWalkPlay && !isChargingPlay)
+                SetSound("walk", true);
+        }
+        else {
+            //walk sound 중지
+            if(isWalkPlay)
+                SetSound("walk", false);
         }
         
         //시점전환 (조준 하는 동안)
@@ -99,12 +148,18 @@ public class Player : MonoBehaviour
             if (isFired)
                 return;
 
+            //조준 소리 재생
+            SetSound("charging", true);
+            
             isReadyToFire = true;
             moveSpeed = chargingSpeed;
             watch.Start();
             currentArrow = Instantiate(arrow, transform.position + aimDirection.normalized + new Vector3(0, 0.5f, 0), Quaternion.identity); //생성할 instance, 생성 위치, 생성 각도
         }
         else if (isReadyToFire && upDown == "Up" && !isFired) {
+            //조준 소리 종료
+            SetSound("charging", false);
+            
             isReadyToFire = false;
             moveSpeed = walkSpeed;
             watch.Stop();
@@ -134,6 +189,9 @@ public class Player : MonoBehaviour
             chargeRate = (chargeTime) * 0.5f;
         //UnityEngine.Debug.Log(chargeRate);
         //UnityEngine.Debug.Log(normalArrowForce + bonusArrowForce * chargeRate);
+
+        //조준 소리 종료
+        SetSound("charging", false);
 
         //발사
         currentArrow.GetComponent<SphereCollider>().isTrigger = false;
@@ -216,6 +274,7 @@ public class Player : MonoBehaviour
 
     //Arrow 회수 함수
     public void GetArrowBack() {
+        gameManager.ArrowBackSound();
         Destroy(currentArrow);
         Destroy(currentIndicator);
         isFired = false;

@@ -10,42 +10,70 @@ public class GameManager : MonoBehaviour
     Player playerScript;
     GameObject boss;
     Boss bossScript;
+    public new GameObject camera;
+    CameraWork cameraWork;
     public GameObject gameOverText;
+    public GameObject gameClearText;
     public GameObject restartButton;
+    public GameObject replayButton;
+    public GameObject quitButton;
 
     //변수
     public bool gameActive;
     int layerMask;
 
+    //sound
+    AudioSource soundPlayer;
+    public AudioClip arrowBackSound;
+
     // Start is called before the first frame update
     void Awake()
     {
+        soundPlayer = GetComponent<AudioSource>();
+        soundPlayer.loop = false;
+
         player = GameObject.Find("Player");
         playerScript = player.GetComponent<Player>();
         boss = GameObject.Find("Boss");
         bossScript = boss.GetComponent<Boss>();
+        cameraWork = camera.GetComponent<CameraWork>();
+
         layerMask = 1 << LayerMask.NameToLayer("Floor");
+        
         gameOverText.SetActive(false);
+        gameClearText.SetActive(false);
         restartButton.SetActive(false);
+        replayButton.SetActive(false);
+        quitButton.SetActive(false);
+        
         gameActive = true;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if(gameActive)
+        CheckEsc();
+        if (gameActive)
             ManageFire();
     }
 
     public void Clear() {
         Debug.Log("Clear");
+        cameraWork.SetSound("fight", false);
         bossScript.BossDied();
+        gameClearText.SetActive(true);
+        replayButton.SetActive(true);
     }
 
     public void GameOver() {
         //player 위치 고정
         player.GetComponent<Rigidbody>().velocity = new Vector3(0, 0, 0);
         playerScript.SetIsTrigger();
+
+        //소리
+        playerScript.SetSound("walk", false);
+        cameraWork.SetSound("fight", false);
+        cameraWork.SetSound("gameOver", true);
 
         //UI 처리 및 게임 정지
         gameOverText.SetActive(true);
@@ -85,7 +113,30 @@ public class GameManager : MonoBehaviour
         else return new Vector3(0, 0, 0);
     }
 
+    public void ArrowBackSound() {
+        soundPlayer.clip = arrowBackSound;
+        soundPlayer.Play();
+    }
+
     public void RestartGame() {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    bool isThereQuitButton = false;
+    void CheckEsc() {
+        if (Input.GetKeyDown(KeyCode.Escape)) {
+            if (!isThereQuitButton) {
+                isThereQuitButton = true;
+                quitButton.SetActive(true);
+            }
+            else {
+                isThereQuitButton = false;
+                quitButton.SetActive(false);
+            }   
+        }
+    }
+
+    public void QuitGame() {
+        Application.Quit();
     }
 }

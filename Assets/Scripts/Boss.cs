@@ -5,9 +5,12 @@ using UnityEngine;
 public class Boss : MonoBehaviour
 {
     //전역 참조변수
-    public GameObject camera;
+    public new GameObject camera;
+    CameraWork cameraWork;
     public GameObject gameM;
     GameManager gameManager;
+    public GameObject nucleus;
+    Renderer nucleusColor;
     GameObject bossAni;
     GameObject bossRotate;
     GameObject player;
@@ -45,11 +48,28 @@ public class Boss : MonoBehaviour
 
     IEnumerator coroutine;
 
+    //sound
+    AudioSource soundPlayer;
+    public AudioClip impactSound;
+    public AudioClip laserSound;
+    public AudioClip wakeUpSound;
+    public AudioClip deadSound;
+
+    //nucleus color
+    Color colorRed;
+    Color colorBlue;
+    Color colorYellow;
+
     // Start is called before the first frame update
     void Start()
     {
         gameManager = gameM.GetComponent<GameManager>();
+        cameraWork = camera.GetComponent<CameraWork>();
         player = GameObject.Find("Player");
+        nucleusColor = nucleus.GetComponent<Renderer>();
+
+        soundPlayer = GetComponent<AudioSource>();
+        soundPlayer.loop = false;
 
         bossAni = transform.GetChild(0).gameObject;
         bossRotate = bossAni.transform.GetChild(0).gameObject;
@@ -59,6 +79,11 @@ public class Boss : MonoBehaviour
 
         coroutine = RepeatChasing();
         StartCoroutine(FindPlayer());
+
+        //색 배정
+        ColorUtility.TryParseHtmlString("#FF3135", out colorRed);
+        ColorUtility.TryParseHtmlString("#007FFF", out colorBlue);
+        ColorUtility.TryParseHtmlString("#B3B31C", out colorYellow);
 
     }
 
@@ -76,15 +101,27 @@ public class Boss : MonoBehaviour
             if (isBossAttacked) {
                 GetComponent<Collider>().enabled = false;
                 bossRotate.GetComponent<Collider>().enabled = true;
+
+                //Boss 일어나는 모션 및 사운드
+                cameraWork.SetSound("idle", false);
+                SetSound("wakeUp", true);
+                nucleusColor.material.color = colorRed;
+
+                yield return new WaitForSeconds(2.5f);
+
+                isBossAttacked = false;
                 StartCoroutine(coroutine);
             }
         }
     }
 
-
-
+    bool playBgm = true;
     public float waitTime = 0.4f;
     IEnumerator RepeatChasing() {
+        if (playBgm) {
+            cameraWork.SetSound("fight", true);
+            playBgm = false;
+        }
         while (gameManager.gameActive) {
             yield return new WaitForSeconds(waitTime);
             ChasingPlayer();
@@ -94,6 +131,16 @@ public class Boss : MonoBehaviour
     public void BossDied() {
         StopCoroutine(coroutine);
         curState = CurrentState.dead;
+
+        //Boss 죽는 모션 및 사운드
+        StartCoroutine(BossDeadMotion());
+    }
+
+    IEnumerator BossDeadMotion() {
+        SetSound("die", true);
+        nucleusColor.material.color = colorBlue;
+        yield return new WaitForSeconds(1f);
+        cameraWork.SetSound("idle", true);
     }
 
     Vector3 playerDir;
@@ -149,6 +196,7 @@ public class Boss : MonoBehaviour
             anim.SetTrigger("moveSignal");
 
             curState = CurrentState.attack;
+            nucleusColor.material.color = colorRed;
             isRotate = true;
             isBossMoving = true;
 
@@ -162,7 +210,9 @@ public class Boss : MonoBehaviour
 
             if (transform.position == destPosition && !isRotate && curState == CurrentState.attack) {
                 curState = CurrentState.weak;
-                camera.GetComponent<CameraWork>().ShakeCameraForTime(shakeTime);
+                nucleusColor.material.color = colorYellow;
+                SetSound("impact", true);
+                cameraWork.ShakeCameraForTime(shakeTime);
             }
 
             if(transform.position == destPosition && !isRotate && (currentTimeSum >= moveMotionTime)) {
@@ -201,6 +251,7 @@ public class Boss : MonoBehaviour
             if (Physics.Raycast(transform.position, -1 * bossRotate.transform.forward, out hitResult, 100.0f, layerMask)) {
                 if(hitResult.normal == Vector3.up) {
                     laserTime = 0.4f;
+                    laserMotionTime = 1.3f;
                     laserScale.transform.localScale = new Vector3(1, 10, 1); //아래방향 발사
                     anim.SetTrigger("laserDown");
                     isAirRotate = true;
@@ -211,8 +262,9 @@ public class Boss : MonoBehaviour
             }
             else
                 laserScale.transform.localScale = new Vector3(1, 10, 1); //위 방향 발사
+            SetSound("laser", true);
             isLaserFire = true;
-            camera.GetComponent<CameraWork>().ShakeCameraForTime(shakeTime);
+            cameraWork.ShakeCameraForTime(shakeTime);
         }
     }
 
@@ -223,7 +275,7 @@ public class Boss : MonoBehaviour
             currentTimeSum += Time.deltaTime;
 
 
-            //시간경과 시 레이저 종료
+            //시간경과 시 레이저 발사 종료
             if (currentTimeSum >= laserTime && !laserFireEnd) {
                 laserScale.transform.localScale = new Vector3(1, 0, 1);
                 laserFireEnd = true;
@@ -246,6 +298,8 @@ public class Boss : MonoBehaviour
                     else {
                         bossRotate.transform.Rotate(Vector3.right, remainAngle, Space.World);
                         remainAngle = 90.0f;
+                        SetSound("impact", true);
+                        cameraWork.ShakeCameraForTime(shakeTime);
                         isAirRotate = false;
                         canStartAirRotate = false;
                     }
@@ -256,11 +310,56 @@ public class Boss : MonoBehaviour
             if (currentTimeSum >= laserMotionTime && !isAirRotate) {
                 currentTimeSum = 0.0f;
                 laserTime = 0.8f;
+                laserMotionTime = 1f;
                 laserFireEnd = false;
                 isLaserFire = false;
                 moveCount = 4f;
             }
             
+        }
+    }
+
+    //sound 관리
+    void SetSound(string name, bool onOff) {
+        if (gameManager.gameActive) {
+            if (name == "impact") {
+                if (onOff) {
+                    soundPlayer.clip = impactSound;
+                    soundPlayer.Play();
+                }
+                else {
+                    soundPlayer.Stop();
+                }
+            }
+            else if (name == "laser") {
+                if (onOff) {
+                    soundPlayer.clip = laserSound;
+                    soundPlayer.Play();
+                }
+                else {
+                    soundPlayer.Stop();
+                }
+            }
+            else if (name == "wakeUp") {
+                if (onOff) {
+                    soundPlayer.clip = wakeUpSound;
+                    soundPlayer.Play();
+                }
+                else {
+                    soundPlayer.Stop();
+                }
+            }
+            else if (name == "die") {
+                if (onOff) {
+                    soundPlayer.clip = deadSound;
+                    soundPlayer.Play();
+                }
+                else {
+                    soundPlayer.Stop();
+                }
+            }
+            else
+                UnityEngine.Debug.Log("Wrong Input in SetSound");
         }
     }
 
