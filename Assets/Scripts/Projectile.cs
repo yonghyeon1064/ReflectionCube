@@ -54,7 +54,7 @@ public class Projectile : MonoBehaviour
     float powerSpeed = 10f;
     IEnumerator ChangeArrowState() {
         while (gameManager.gameActive) {
-            Debug.Log(arrowRig.velocity.magnitude);
+            //Debug.Log(arrowRig.velocity.magnitude);
             if(arrowRig.velocity.magnitude > powerSpeed && colCount < 2) {
                 arrowState = CurrentArrowState.power;
                 arrowColor.material.color = Color.red;

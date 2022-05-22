@@ -52,8 +52,8 @@ public class Player : MonoBehaviour
 
         //Line renderer
         aimLine = GetComponent<LineRenderer>();
-        aimLine.startColor = Color.yellow;
-        aimLine.endColor = Color.yellow;
+        aimLine.startColor = Color.red;
+        aimLine.endColor = Color.red;
         aimLine.startWidth = 0.2f;
         aimLine.endWidth = 0.2f;
         aimLine.positionCount = 0;

@@ -5,6 +5,7 @@ using UnityEngine;
 public class Boss : MonoBehaviour
 {
     //전역 참조변수
+    public GameObject camera;
     public GameObject gameM;
     GameManager gameManager;
     GameObject bossAni;
@@ -34,6 +35,7 @@ public class Boss : MonoBehaviour
     //이동, laser 둘다 사용
     float remainAngle = 90f;
     float currentTimeSum = 0.0f;
+    public float shakeTime = 0.1f;
 
     //Boss state
     public enum CurrentState {
@@ -160,6 +162,7 @@ public class Boss : MonoBehaviour
 
             if (transform.position == destPosition && !isRotate && curState == CurrentState.attack) {
                 curState = CurrentState.weak;
+                camera.GetComponent<CameraWork>().ShakeCameraForTime(shakeTime);
             }
 
             if(transform.position == destPosition && !isRotate && (currentTimeSum >= moveMotionTime)) {
@@ -209,6 +212,7 @@ public class Boss : MonoBehaviour
             else
                 laserScale.transform.localScale = new Vector3(1, 10, 1); //위 방향 발사
             isLaserFire = true;
+            camera.GetComponent<CameraWork>().ShakeCameraForTime(shakeTime);
         }
     }
 
