@@ -51,11 +51,12 @@ public class Boss : MonoBehaviour
 
         bossAni = transform.GetChild(0).gameObject;
         bossRotate = bossAni.transform.GetChild(0).gameObject;
+        bossRotate.GetComponent<Collider>().enabled = false;
         anim = bossAni.GetComponent<Animator>();
         anim.SetBool("isFin", true);
 
         coroutine = RepeatChasing();
-        //StartCoroutine(FindPlayer());
+        StartCoroutine(FindPlayer());
 
     }
 
@@ -72,6 +73,7 @@ public class Boss : MonoBehaviour
             yield return new WaitForSeconds(0.5f);
             if (isBossAttacked) {
                 GetComponent<Collider>().enabled = false;
+                bossRotate.GetComponent<Collider>().enabled = true;
                 StartCoroutine(coroutine);
             }
         }

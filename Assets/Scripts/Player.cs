@@ -23,7 +23,9 @@ public class Player : MonoBehaviour
     LineRenderer aimLine;
 
     //전역 변수
-    public float moveSpeed = 5f;
+    public float moveSpeed;
+    public float walkSpeed = 8f;
+    public float chargingSpeed = 5f;
     float inputX = 0;
     float inputZ = 0;
     bool isReadyToFire = false;
@@ -33,6 +35,7 @@ public class Player : MonoBehaviour
     public float fullChargeTime = 2f;
     bool isFired = false;
     public LayerMask layerMask;
+
 
     // Start is called before the first frame update
     void Start()
@@ -45,14 +48,17 @@ public class Player : MonoBehaviour
         playerRig = GetComponent<Rigidbody>();
         watch = new System.Diagnostics.Stopwatch();
 
+        moveSpeed = walkSpeed;
+
         //Line renderer
         aimLine = GetComponent<LineRenderer>();
-        aimLine.startColor = new Color(1, 0, 0, 0.5f);
-        aimLine.endColor = new Color(1, 0, 0, 0.5f);
+        aimLine.startColor = Color.yellow;
+        aimLine.endColor = Color.yellow;
         aimLine.startWidth = 0.2f;
         aimLine.endWidth = 0.2f;
         aimLine.positionCount = 0;
 
+        
     }
 
     // Update is called once per frame
@@ -88,29 +94,30 @@ public class Player : MonoBehaviour
     }
 
     //화살 발사 준비 (Game Manager가 호출)
-    public void ChangeReadyState() {
-        if (!isReadyToFire) {
+    public void ChangeReadyState(string upDown) {
+        if (!isReadyToFire && upDown == "Down") {
             if (isFired)
                 return;
 
             isReadyToFire = true;
+            moveSpeed = chargingSpeed;
             watch.Start();
             currentArrow = Instantiate(arrow, transform.position + aimDirection.normalized + new Vector3(0, 0.5f, 0), Quaternion.identity); //생성할 instance, 생성 위치, 생성 각도
         }
-        else {
+        else if (isReadyToFire && upDown == "Up" && !isFired) {
             isReadyToFire = false;
+            moveSpeed = walkSpeed;
             watch.Stop();
             watch.Reset();
-            if(!isFired)
-                Destroy(currentArrow);
+            Destroy(currentArrow);
 
             //조준선 지우기
             if (aimLine.positionCount == 2) {
                 aimLine.SetPosition(0, Vector3.zero);
                 aimLine.SetPosition(1, Vector3.zero);
                 aimLine.positionCount = 0;
-            }
-        }            
+            }       
+        }         
     }
 
     //화살 발사 (Game Manager가 호출)
@@ -131,10 +138,12 @@ public class Player : MonoBehaviour
         //발사
         currentArrow.GetComponent<SphereCollider>().isTrigger = false;
         currentArrow.GetComponent<Projectile>().ShootArrow(aimDirection, normalArrowForce + bonusArrowForce * chargeRate);
+        
+        isReadyToFire = false;
         isFired = true;
+        moveSpeed = walkSpeed;
 
         watch.Reset();
-        watch.Start();
 
         //indicator 표시
         currentIndicator = Instantiate(indicator, transform.position + aimDirection.normalized + new Vector3(0, 0.5f, 0), transform.rotation); //생성할 instance, 생성 위치, 생성 각도
@@ -186,7 +195,7 @@ public class Player : MonoBehaviour
                 aimLine.SetPosition(0, currentArrow.transform.position);
                 aimLine.SetPosition(1, hitResult.point);
             }
-        }        
+        }
     }
 
     private void OnTriggerEnter(Collider col) {
@@ -199,17 +208,17 @@ public class Player : MonoBehaviour
 
     private void OnCollisionEnter(Collision col) {
         if (gameManager.gameActive) {
-            GetArrowBack(col);
+            if(col.gameObject.tag == "FriendlyArrow") {
+                GetArrowBack();
+            }
         }
     }
 
     //Arrow 회수 함수
-    void GetArrowBack(Collision col) {
-        if (col.gameObject.tag == "FriendlyArrow") {
-            Destroy(currentArrow);
-            Destroy(currentIndicator);
-            isFired = false;
-        }
+    public void GetArrowBack() {
+        Destroy(currentArrow);
+        Destroy(currentIndicator);
+        isFired = false;
     }
 
     //colliider들의 isTrigger true로 바꾸는 함수 (GameOver가 호출)

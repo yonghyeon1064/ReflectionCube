@@ -60,10 +60,10 @@ public class GameManager : MonoBehaviour
 
         //ready
         if (Input.GetMouseButtonDown(1)) {
-            playerScript.ChangeReadyState();
+            playerScript.ChangeReadyState("Down");
         }
         else if (Input.GetMouseButtonUp(1)) {
-            playerScript.ChangeReadyState();
+            playerScript.ChangeReadyState("Up");
         }
 
         //fire

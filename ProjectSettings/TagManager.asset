@@ -9,6 +9,7 @@ TagManager:
   - Floor
   - Boss
   - Laser
+  - Nucleus
   layers:
   - Default
   - TransparentFX
