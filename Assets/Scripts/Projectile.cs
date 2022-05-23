@@ -14,7 +14,7 @@ public class Projectile : MonoBehaviour
 
     //변수
     Vector3 lastVelocity;
-    int colCount = 2;
+    int colCount = 1;
 
     //Arrow state
     public enum CurrentArrowState {

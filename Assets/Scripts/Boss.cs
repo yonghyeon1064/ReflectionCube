@@ -10,7 +10,10 @@ public class Boss : MonoBehaviour
     public GameObject gameM;
     GameManager gameManager;
     public GameObject nucleus;
-    Renderer nucleusColor;
+    public GameObject subNucl;
+    public GameObject[] bossBody = new GameObject[8];
+    public GameObject[] bossWall = new GameObject[10];
+    public GameObject[] bossSubWall = new GameObject[4];
     GameObject bossAni;
     GameObject bossRotate;
     GameObject player;
@@ -55,10 +58,17 @@ public class Boss : MonoBehaviour
     public AudioClip wakeUpSound;
     public AudioClip deadSound;
 
-    //nucleus color
-    Color colorRed;
-    Color colorBlue;
-    Color colorYellow;
+    //color
+    Renderer[] nucleusColor = new Renderer[2];
+    Renderer[] bodyColor = new Renderer[8];
+    Renderer[] wallColor = new Renderer[9];
+    Renderer[] subWallColor = new Renderer[4];
+
+    Color[] colorForNucl = new Color[3];
+    Color[] colorForBody = new Color[3];
+    Color[] colorForWall = new Color[3];
+    Color[] colorForSubWall = new Color[3];
+
 
     // Start is called before the first frame update
     void Start()
@@ -66,7 +76,7 @@ public class Boss : MonoBehaviour
         gameManager = gameM.GetComponent<GameManager>();
         cameraWork = camera.GetComponent<CameraWork>();
         player = GameObject.Find("Player");
-        nucleusColor = nucleus.GetComponent<Renderer>();
+        
 
         soundPlayer = GetComponent<AudioSource>();
         soundPlayer.loop = false;
@@ -80,10 +90,10 @@ public class Boss : MonoBehaviour
         coroutine = RepeatChasing();
         StartCoroutine(FindPlayer());
 
-        //색 배정
-        ColorUtility.TryParseHtmlString("#FF3135", out colorRed);
-        ColorUtility.TryParseHtmlString("#007FFF", out colorBlue);
-        ColorUtility.TryParseHtmlString("#B3B31C", out colorYellow);
+        //색깔
+        SetColorTemplate();
+        SetRenderer();
+        ColorChange("Blue");
 
     }
 
@@ -105,7 +115,7 @@ public class Boss : MonoBehaviour
                 //Boss 일어나는 모션 및 사운드
                 cameraWork.SetSound("idle", false);
                 SetSound("wakeUp", true);
-                nucleusColor.material.color = colorRed;
+                ColorChange("Red");
 
                 yield return new WaitForSeconds(2.5f);
 
@@ -138,7 +148,7 @@ public class Boss : MonoBehaviour
 
     IEnumerator BossDeadMotion() {
         SetSound("die", true);
-        nucleusColor.material.color = colorBlue;
+        ColorChange("Blue");
         yield return new WaitForSeconds(1f);
         cameraWork.SetSound("idle", true);
     }
@@ -196,7 +206,7 @@ public class Boss : MonoBehaviour
             anim.SetTrigger("moveSignal");
 
             curState = CurrentState.attack;
-            nucleusColor.material.color = colorRed;
+            ColorChange("Red");
             isRotate = true;
             isBossMoving = true;
 
@@ -210,7 +220,7 @@ public class Boss : MonoBehaviour
 
             if (transform.position == destPosition && !isRotate && curState == CurrentState.attack) {
                 curState = CurrentState.weak;
-                nucleusColor.material.color = colorYellow;
+                ColorChange("Yellow");
                 SetSound("impact", true);
                 cameraWork.ShakeCameraForTime(shakeTime);
             }
@@ -360,6 +370,76 @@ public class Boss : MonoBehaviour
             }
             else
                 UnityEngine.Debug.Log("Wrong Input in SetSound");
+        }
+    }
+
+    void SetColorTemplate() {
+        //Nucl
+        ColorUtility.TryParseHtmlString("#007FFF", out colorForNucl[0]);
+        ColorUtility.TryParseHtmlString("#FF3135", out colorForNucl[1]);
+        ColorUtility.TryParseHtmlString("#B3B31C", out colorForNucl[2]);
+
+        //Body
+        ColorUtility.TryParseHtmlString("#1D309C", out colorForBody[0]);
+        ColorUtility.TryParseHtmlString("#9C1D22", out colorForBody[1]);
+        ColorUtility.TryParseHtmlString("#B46807", out colorForBody[2]);
+
+        //Wall
+        ColorUtility.TryParseHtmlString("#06236A", out colorForWall[0]);
+        ColorUtility.TryParseHtmlString("#6A061C", out colorForWall[1]);
+        ColorUtility.TryParseHtmlString("#9C5C1D", out colorForWall[2]);
+
+        //SubWall
+        ColorUtility.TryParseHtmlString("#101143", out colorForSubWall[0]);
+        ColorUtility.TryParseHtmlString("#431110", out colorForSubWall[1]);
+        ColorUtility.TryParseHtmlString("#432C10", out colorForSubWall[2]);
+    }
+
+    void SetRenderer() {
+        nucleusColor[0] = nucleus.GetComponent<Renderer>();
+        nucleusColor[1] = subNucl.GetComponent<Renderer>();
+        for (int i=0; i<9; i++) {
+            wallColor[i] = bossWall[i].GetComponent<Renderer>();
+            if(i < 8)
+                bodyColor[i] = bossBody[i].GetComponent<Renderer>();
+            if (i < 4)
+                subWallColor[i] = bossSubWall[i].GetComponent<Renderer>();
+        }
+    }
+
+    void ColorChange(string color) {
+        if (color == "Blue") {
+            nucleusColor[0].material.color = colorForNucl[0];
+            nucleusColor[1].material.color = colorForNucl[0];
+            for (int i = 0; i < 9; i++) {
+                wallColor[i].material.color = colorForWall[0];
+                if (i < 8)
+                    bodyColor[i].material.color = colorForBody[0];
+                if (i < 4)
+                    subWallColor[i].material.color = colorForSubWall[0];
+            }
+        }
+        else if (color == "Red") {
+            nucleusColor[0].material.color = colorForNucl[1];
+            nucleusColor[1].material.color = colorForNucl[1];
+            for (int i=0; i<9; i++) {
+                wallColor[i].material.color = colorForWall[1];
+                if (i < 8)
+                    bodyColor[i].material.color = colorForBody[1];
+                if (i < 4)
+                    subWallColor[i].material.color = colorForSubWall[1];
+            }
+        }
+        else if(color == "Yellow") {
+            nucleusColor[0].material.color = colorForNucl[2];
+            nucleusColor[1].material.color = colorForNucl[2];
+            for (int i = 0; i < 9; i++) {
+                wallColor[i].material.color = colorForWall[2];
+                if (i < 8)
+                    bodyColor[i].material.color = colorForBody[2];
+                if (i < 4)
+                    subWallColor[i].material.color = colorForSubWall[2];
+            }
         }
     }
 

@@ -58,7 +58,6 @@ public class GameManager : MonoBehaviour
     }
 
     public void Clear() {
-        Debug.Log("Clear");
         cameraWork.SetSound("fight", false);
         bossScript.BossDied();
         gameClearText.SetActive(true);

@@ -1367,6 +1367,31 @@ MonoBehaviour:
   camera: {fileID: 963194225}
   gameM: {fileID: 698528240}
   nucleus: {fileID: 1314810495}
+  subNucl: {fileID: 885096612}
+  bossBody:
+  - {fileID: 1059984797}
+  - {fileID: 1672531323}
+  - {fileID: 80219303}
+  - {fileID: 458609213}
+  - {fileID: 1789038775}
+  - {fileID: 464487963}
+  - {fileID: 1723803567}
+  - {fileID: 571105671}
+  bossWall:
+  - {fileID: 1439993008}
+  - {fileID: 821795096}
+  - {fileID: 885052255}
+  - {fileID: 414033442}
+  - {fileID: 1275406830}
+  - {fileID: 1781866605}
+  - {fileID: 838520506}
+  - {fileID: 904022045}
+  - {fileID: 565168171}
+  bossSubWall:
+  - {fileID: 1086428882}
+  - {fileID: 1504457704}
+  - {fileID: 1535172634}
+  - {fileID: 1923140228}
   laserScale: {fileID: 1132175953}
   layerMask:
     serializedVersion: 2
