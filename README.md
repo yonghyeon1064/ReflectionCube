@@ -16,5 +16,4 @@
 ps. 게임 내에 ui로 조작법 설명을 만들려 했으나 디자인 적인 실력이 부족하여 아직까지 완성 못했습니다  
 
 ### 영상  
-
-<iframe width="640" height="360" src="https://youtu.be/z3njAB4Tfyc" frameborder="0" gesture="media" allowfullscreen=""></iframe>
+[Test Play 영상](https://youtu.be/z3njAB4Tfyc)  
