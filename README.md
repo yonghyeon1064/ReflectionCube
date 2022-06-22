@@ -17,5 +17,4 @@ ps. 게임 내에 ui로 조작법 설명을 만들려 했으나 디자인 적인
 
 ### 영상  
 
-<iframe id="video" width="648" height="364" src="TestPlay.mp4" frameborder="0">
-</iframe>
+<iframe width="640" height="360" src="https://youtu.be/z3njAB4Tfyc" frameborder="0" gesture="media" allowfullscreen=""></iframe>
